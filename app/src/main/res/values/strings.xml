@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">DucDiep_Dictionary</string>
+    <string name="tutorial">Chọn MON, TUE,... để cài đặt ngày bắt đầu của tuần </string>
+    <string name="infor1">Tạo mật khẩu cho lần đầu sử dụng app</string>
+    <string name="infor2">Nhập mật khẩu để sử dụng app</string>
+</resources>

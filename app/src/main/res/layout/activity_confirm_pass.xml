@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".activities.ConfirmPassActivity">
+    <TextView
+        android:id="@+id/tv_info"
+        android:text="Tạo mật khẩu cho lần đầu sử dụng app"
+        android:layout_marginBottom="10dp"
+        android:textSize="20dp"
+        android:gravity="center"
+        android:layout_above="@id/edt_password"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+    <EditText
+        android:id="@+id/edt_password"
+        android:layout_centerInParent="true"
+        android:hint="Mật khẩu"
+        android:inputType="textPassword"
+        android:layout_marginHorizontal="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+    <EditText
+        android:id="@+id/edt_confirm_password"
+        android:hint="Xác nhận mật khẩu"
+        android:layout_below="@id/edt_password"
+        android:layout_marginHorizontal="10dp"
+        android:inputType="textPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_login"
+        android:text="Đăng nhập"
+        android:layout_below="@id/edt_confirm_password"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:paddingHorizontal="10dp"
+        android:background="@drawable/btn_login"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_centerInParent="true"
+        android:visibility="gone"
+        android:layout_width="50dp"
+        android:layout_height="50dp"/>
+
+</RelativeLayout>
