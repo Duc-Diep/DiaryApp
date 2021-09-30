@@ -1,15 +1,22 @@
 package com.example.dictionary.activities
 
-import androidx.appcompat.app.AppCompatActivity
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.viewpager.widget.ViewPager
 import com.example.dictionary.R
 import com.example.dictionary.adapters.DayOfWeekAdapter
 import com.example.dictionary.adapters.ViewPagerAdapter
 import com.example.dictionary.fragments.MonthFragment
+import com.example.dictionary.helpers.SQLHelper
 import com.example.dictionary.objects.DaysOfWeek
 import com.example.dictionary.utils.AppPreferences
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.BufferedWriter
+import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStreamWriter
 import java.time.LocalDate
 
 private const val PAGE_CENTER = 1
@@ -19,6 +26,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var fragList: ArrayList<MonthFragment>
     lateinit var pageAdapter: ViewPagerAdapter
     lateinit var listDayOfWeek: ArrayList<DaysOfWeek>
+    lateinit var sqlHelper: SQLHelper
     var valueFirstDayOfWeek = 0
     var daysOfWeekAdapter: DayOfWeekAdapter? = null
 
@@ -27,6 +35,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         supportActionBar?.hide()
+        sqlHelper = SQLHelper(this)
         reloadData()
         localDate = LocalDate.now()
         tv_month.text = "Tháng ${localDate.month.value} - ${localDate.year}"
@@ -34,19 +43,47 @@ class MainActivity : AppCompatActivity() {
         setupViewPager()
         //setup day of week
         setUpDaysOfWeek(valueFirstDayOfWeek)
+        btn_list_dic.setOnClickListener {
+            startActivity(Intent(this@MainActivity, ListDictionaryActivity::class.java))
+        }
+        btn_backup.setOnClickListener {
+            backupData()
+        }
+    }
+
+    private fun backupData() {
+        try {
+            val file = File(filesDir, "backup.csv")
+            val fileOutputStream = FileOutputStream(file)
+            val outputStreamWriter = OutputStreamWriter(fileOutputStream,"UTF-8")
+            val bw = BufferedWriter(outputStreamWriter)
+            var listEvent = sqlHelper.getAllEvent()
+            for (element in listEvent) {
+                if (element.eventContent.contains(",")||element.eventContent.contains("\n")){
+                    bw.write("${element.date},\"${element.eventContent}\"")
+                }else{
+                    bw.write("${element.date},${element.eventContent}")
+                }
+                bw.newLine()
+            }
+            bw.close()
+            Toast.makeText(this, "Lưu trữ thành công", Toast.LENGTH_SHORT).show()
+        }catch (ex: Exception){
+            Toast.makeText(this, "Lưu trữ thất bại $ex", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun setupViewPager() {
         fragList = ArrayList()
 
         fragList.apply {
-            add(MonthFragment.newInstance(localDate.minusMonths(1),false))
-            add(MonthFragment.newInstance(localDate,true))
-            add(MonthFragment.newInstance(localDate.plusMonths(1),false))
+            add(MonthFragment.newInstance(localDate.minusMonths(1), false))
+            add(MonthFragment.newInstance(localDate, true))
+            add(MonthFragment.newInstance(localDate.plusMonths(1), false))
         }
         pageAdapter = ViewPagerAdapter(supportFragmentManager, fragList)
         view_pager.adapter = pageAdapter
-        view_pager.offscreenPageLimit=3
+        view_pager.offscreenPageLimit = 3
         view_pager.setCurrentItem(1, false)
         view_pager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
             override fun onPageScrolled(
@@ -59,10 +96,12 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageSelected(position: Int) {
                 focusPage = position
-                if (focusPage < PAGE_CENTER){
-                    tv_month.text = "Tháng ${localDate.minusMonths(1).month.value} - ${localDate.minusMonths(1).year}"
-                }else if(focusPage> PAGE_CENTER){
-                    tv_month.text = "Tháng ${localDate.plusMonths(1).month.value} - ${localDate.plusMonths(1).year}"
+                if (focusPage < PAGE_CENTER) {
+                    tv_month.text =
+                        "Tháng ${localDate.minusMonths(1).month.value} - ${localDate.minusMonths(1).year}"
+                } else if (focusPage > PAGE_CENTER) {
+                    tv_month.text =
+                        "Tháng ${localDate.plusMonths(1).month.value} - ${localDate.plusMonths(1).year}"
                 }
 
 
@@ -120,7 +159,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun reloadData(){
+    private fun reloadData() {
         AppPreferences.init(this)
         AppPreferences.firstDayOfWeek = 0
         AppPreferences.checkedDay = LocalDate.now().dayOfMonth

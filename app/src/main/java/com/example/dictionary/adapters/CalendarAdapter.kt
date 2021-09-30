@@ -13,7 +13,7 @@ import com.example.dictionary.R
 import com.example.dictionary.events.DoubleClickListener
 import com.example.dictionary.utils.AppPreferences
 
-class CalendarAdapter(var context: Context?, var dayOfMonth: ArrayList<Day>) :
+class CalendarAdapter(var context: Context, var dayOfMonth: ArrayList<Day>) :
     RecyclerView.Adapter<CalendarAdapter.DayViewHolder>() {
     var onClick: ((Day) -> Unit)? = null
     var index = -1
@@ -36,18 +36,23 @@ class CalendarAdapter(var context: Context?, var dayOfMonth: ArrayList<Day>) :
     override fun onBindViewHolder(holder: DayViewHolder, position: Int) {
         var day = dayOfMonth[position]
         holder.tvDay.text = day.date.dayOfMonth.toString()
+
         if (day.checked) {
             index = position
             holder.bgrChecked.setBackgroundColor(color)
-        } else {
-            holder.bgrChecked.setBackgroundColor(0)
-        }
+        } else
+            if (day.eventContent != "") {
+                holder.bgrChecked.setBackgroundColor(ContextCompat.getColor(context, R.color.grey))
+            } else {
+                holder.bgrChecked.setBackgroundColor(0)
+            }
+
 
         if (!day.isInMonth) {
-            holder.tvDay.setTextColor(ContextCompat.getColor(context!!, R.color.grey))
+            holder.tvDay.setTextColor(ContextCompat.getColor(context, R.color.grey))
             holder.bgrChecked.isEnabled = false
         } else {
-            holder.tvDay.setTextColor(ContextCompat.getColor(context!!, R.color.black))
+            holder.tvDay.setTextColor(ContextCompat.getColor(context, R.color.black))
         }
 
 

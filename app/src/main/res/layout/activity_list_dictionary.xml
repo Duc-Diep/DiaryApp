@@ -16,11 +16,20 @@
             android:layout_width="50dp"
             android:layout_height="50dp"/>
         <EditText
+            android:id="@+id/edt_search"
             android:hint="Tìm kiếm"
+            android:background="@null"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="match_parent"/>
     </LinearLayout>
-    <androidx.recyclerview.widget.RecyclerView
+    <View
+        android:background="#C1C1C1"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="1dp"/>
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rcv_dictionary"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 </LinearLayout>
