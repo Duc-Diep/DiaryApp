@@ -2,14 +2,12 @@ package com.example.dictionary.activities
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.viewpager.widget.ViewPager
 import com.example.dictionary.R
 import com.example.dictionary.adapters.DayOfWeekAdapter
-import com.example.dictionary.adapters.DictionaryAdapter
 import com.example.dictionary.adapters.ViewPagerAdapter
 import com.example.dictionary.fragments.MonthFragment
 import com.example.dictionary.helpers.SQLHelper
@@ -38,7 +36,7 @@ class MainActivity : AppCompatActivity() {
     private val updateDictionary =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode == RESULT_OK) {
-                pageAdapter.setCalendar(localDate,valueFirstDayOfWeek)
+                pageAdapter.setCalendar(localDate, valueFirstDayOfWeek)
             }
         }
 
@@ -61,20 +59,36 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun restoreEvent() {
-        var list = getListLine()
-        if(list.isEmpty()){
-            Toast.makeText(this,"Chưa backup dữ liệu, không thể restore",Toast.LENGTH_SHORT).show()
-            return
+        try {
+            var list = getListLine()
+            if (list.isEmpty()) {
+                Toast.makeText(this, "Chưa backup dữ liệu, không thể restore", Toast.LENGTH_SHORT)
+                    .show()
+                return
+            }
+            var listEvent = ArrayList<Day>()
+            for (element in list) {
+                var listResult = getEventInfor(element)
+                listEvent.add(
+                    Day(
+                        LocalDate.parse(listResult[0], format),
+                        false,
+                        false,
+                        listResult[1]
+                    )
+                )
+            }
+            sqlHelper.deleteAllEvent()
+            sqlHelper.addRestoreEvent(listEvent)
+            pageAdapter.setCalendar(localDate, valueFirstDayOfWeek)
+            Toast.makeText(this, "Restore thành công", Toast.LENGTH_SHORT).show()
+        } catch (ex: Exception) {
+            Toast.makeText(
+                this,
+                "Có lỗi xảy ra trong quá trình phục hồi dữ liệu",
+                Toast.LENGTH_SHORT
+            ).show()
         }
-        var listEvent = ArrayList<Day>()
-        for (element in list){
-            var listResult = getEventInfor(element)
-            listEvent.add(Day(LocalDate.parse(listResult[0], format),false,false,listResult[1]))
-        }
-        sqlHelper.deleteAllEvent()
-        sqlHelper.addRestoreEvent(listEvent)
-        pageAdapter.setCalendar(localDate,valueFirstDayOfWeek)
-        Toast.makeText(this,"Restore thành công",Toast.LENGTH_SHORT).show()
     }
 
     private fun initView() {
@@ -91,8 +105,8 @@ class MainActivity : AppCompatActivity() {
     private fun backupData() {
         try {
             var listEvent = sqlHelper.getAllEvent()
-            if (listEvent.isEmpty()){
-                Toast.makeText(this,"Chưa có dữ liệu để backup",Toast.LENGTH_SHORT).show()
+            if (listEvent.isEmpty()) {
+                Toast.makeText(this, "Chưa có dữ liệu để backup", Toast.LENGTH_SHORT).show()
                 return
             }
             val file = File(filesDir, "backup.csv")
@@ -120,17 +134,17 @@ class MainActivity : AppCompatActivity() {
         var str = StringBuilder()
         for (i in line.indices) {
             var ch = line[i]
-            if (ch == '\"') {
-                if (str.length > 0 && stack.size % 2 == 0) {
+            if (ch === '\"') {
+                if (str.length > 0 && stack.size % 2 == 0)
                     str.append(ch)
-                }
-            } else if (ch == ',' && stack.size % 2 == 0){
+                stack.push(ch)
+            } else if (ch === ',' && stack.size % 2 == 0) {
                 result.add(str.toString())
                 stack.clear()
                 str = StringBuilder()
-            }else if (ch == ',' && stack.size % 2 != 0){
+            } else if (ch === ',' && stack.size % 2 != 0) {
                 str.append(ch)
-            }else{
+            } else {
                 str.append(ch)
             }
         }
@@ -138,7 +152,7 @@ class MainActivity : AppCompatActivity() {
         return result
     }
 
-    fun getListLine():List<String>{
+    fun getListLine(): List<String> {
         var listLine = ArrayList<String>()
         try {
             val file = File(filesDir, "backup.csv")
@@ -146,33 +160,33 @@ class MainActivity : AppCompatActivity() {
             val inputStreamReader = InputStreamReader(fileInputStream, "UTF-8")
             val bw = BufferedReader(inputStreamReader)
 
-                var line: String? = bw.readLine()
-                var strTemp = ""
-                while (line != null) {
-                    while (countQuotes(line.toString())%2==1){
-                        strTemp += "$line\n"
-                        line = bw.readLine()
-                    }
-                    if (strTemp!=""){
-                        strTemp = strTemp.substring(0,strTemp.length-2)
-                        listLine.add(strTemp)
-                        strTemp=""
-                    }else{
-                        listLine.add(line.toString())
-                    }
+            var line: String? = bw.readLine()
+            var strTemp = ""
+            while (line != null) {
+                while (countQuotes(line.toString()) % 2 == 1) {
+                    strTemp += "$line\n"
                     line = bw.readLine()
                 }
+                if (strTemp != "") {
+                    strTemp = strTemp.substring(0, strTemp.length - 2)
+                    listLine.add(strTemp)
+                    strTemp = ""
+                } else {
+                    listLine.add(line.toString())
+                    line = bw.readLine()
+                }
+            }
         } catch (e: IOException) {
             e.printStackTrace()
         }
         return listLine
     }
 
-    fun countQuotes(line: String):Int{
+    fun countQuotes(line: String): Int {
         var count = 0
-        for (i in line.indices){
+        for (i in line.indices) {
             var ch = line[i].toString()
-            if (ch=="\""){
+            if (ch == "\"") {
                 count++
             }
         }
