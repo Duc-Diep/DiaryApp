@@ -30,6 +30,7 @@ class WriteDictionaryActivity : AppCompatActivity() {
         btn_save.setOnClickListener {
             if (edt_event.text.toString()!=""){
                 sqlHelper.addOrUpdateEvent(Day(date,false,false,edt_event.text.toString()))
+                Toast.makeText(this@WriteDictionaryActivity,"Lưu thành công",Toast.LENGTH_SHORT).show()
                 setResult(RESULT_OK)
                 finish()
             }else{

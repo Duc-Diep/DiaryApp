@@ -154,7 +154,7 @@ class MainActivity : AppCompatActivity() {
                         line = bw.readLine()
                     }
                     if (strTemp!=""){
-                        strTemp = strTemp.substring(0,strTemp.length-1)
+                        strTemp = strTemp.substring(0,strTemp.length-2)
                         listLine.add(strTemp)
                         strTemp=""
                     }else{
