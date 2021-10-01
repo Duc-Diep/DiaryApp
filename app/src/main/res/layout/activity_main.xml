@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="@color/backgr"
     android:padding="10dp"
     tools:context=".activities.MainActivity">
 
@@ -39,12 +40,16 @@
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_backup"
         android:layout_alignParentBottom="true"
-        android:text="Back up data"
+        android:text="@string/backup"
+        android:background="@drawable/btn_login"
+        android:paddingHorizontal="10dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_restore"
-        android:text="Restore data"
+        android:text="@string/store"
+        android:background="@drawable/btn_login"
+        android:paddingHorizontal="10dp"
         android:layout_alignParentRight="true"
         android:layout_alignParentBottom="true"
         android:layout_width="wrap_content"

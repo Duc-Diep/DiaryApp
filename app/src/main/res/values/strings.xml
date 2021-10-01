@@ -1,6 +1,9 @@
 <resources>
-    <string name="app_name">DucDiep_Dictionary</string>
-    <string name="tutorial">Chọn MON, TUE,... để cài đặt ngày bắt đầu của tuần </string>
+    <string name="app_name">DictionaryApp</string>
+    <string name="tutorial"> Double click vào ngày muốn viết sự kiện </string>
     <string name="infor1">Tạo mật khẩu cho lần đầu sử dụng app</string>
     <string name="infor2">Nhập mật khẩu để sử dụng app</string>
+    <string name="no_event">Chưa có sự kiện nào được lưu</string>
+    <string name="backup">Sao lưu dữ liệu</string>
+    <string name="store">Phục hồi dữ liệu</string>
 </resources>

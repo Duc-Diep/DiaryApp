@@ -2,24 +2,30 @@ package com.example.dictionary.activities
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.viewpager.widget.ViewPager
 import com.example.dictionary.R
 import com.example.dictionary.adapters.DayOfWeekAdapter
+import com.example.dictionary.adapters.DictionaryAdapter
 import com.example.dictionary.adapters.ViewPagerAdapter
 import com.example.dictionary.fragments.MonthFragment
 import com.example.dictionary.helpers.SQLHelper
+import com.example.dictionary.objects.Day
 import com.example.dictionary.objects.DaysOfWeek
 import com.example.dictionary.utils.AppPreferences
 import kotlinx.android.synthetic.main.activity_main.*
-import java.io.BufferedWriter
-import java.io.File
-import java.io.FileOutputStream
-import java.io.OutputStreamWriter
+import java.io.*
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.*
+import kotlin.collections.ArrayList
+
 
 private const val PAGE_CENTER = 1
+private val format: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
 class MainActivity : AppCompatActivity() {
     lateinit var localDate: LocalDate
@@ -29,12 +35,49 @@ class MainActivity : AppCompatActivity() {
     lateinit var sqlHelper: SQLHelper
     var valueFirstDayOfWeek = 0
     var daysOfWeekAdapter: DayOfWeekAdapter? = null
+    private val updateDictionary =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            if (it.resultCode == RESULT_OK) {
+                pageAdapter.setCalendar(localDate,valueFirstDayOfWeek)
+            }
+        }
 
     var focusPage = 1
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         supportActionBar?.hide()
+        initView()
+        btn_list_dic.setOnClickListener {
+            var intent = Intent(this@MainActivity, ListDictionaryActivity::class.java)
+            updateDictionary.launch(intent)
+        }
+        btn_backup.setOnClickListener {
+            backupData()
+        }
+        btn_restore.setOnClickListener {
+            restoreEvent()
+        }
+    }
+
+    private fun restoreEvent() {
+        var list = getListLine()
+        if(list.isEmpty()){
+            Toast.makeText(this,"Chưa backup dữ liệu, không thể restore",Toast.LENGTH_SHORT).show()
+            return
+        }
+        var listEvent = ArrayList<Day>()
+        for (element in list){
+            var listResult = getEventInfor(element)
+            listEvent.add(Day(LocalDate.parse(listResult[0], format),false,false,listResult[1]))
+        }
+        sqlHelper.deleteAllEvent()
+        sqlHelper.addRestoreEvent(listEvent)
+        pageAdapter.setCalendar(localDate,valueFirstDayOfWeek)
+        Toast.makeText(this,"Restore thành công",Toast.LENGTH_SHORT).show()
+    }
+
+    private fun initView() {
         sqlHelper = SQLHelper(this)
         reloadData()
         localDate = LocalDate.now()
@@ -43,34 +86,97 @@ class MainActivity : AppCompatActivity() {
         setupViewPager()
         //setup day of week
         setUpDaysOfWeek(valueFirstDayOfWeek)
-        btn_list_dic.setOnClickListener {
-            startActivity(Intent(this@MainActivity, ListDictionaryActivity::class.java))
-        }
-        btn_backup.setOnClickListener {
-            backupData()
-        }
     }
 
     private fun backupData() {
         try {
+            var listEvent = sqlHelper.getAllEvent()
+            if (listEvent.isEmpty()){
+                Toast.makeText(this,"Chưa có dữ liệu để backup",Toast.LENGTH_SHORT).show()
+                return
+            }
             val file = File(filesDir, "backup.csv")
             val fileOutputStream = FileOutputStream(file)
-            val outputStreamWriter = OutputStreamWriter(fileOutputStream,"UTF-8")
+            val outputStreamWriter = OutputStreamWriter(fileOutputStream, "UTF-8")
             val bw = BufferedWriter(outputStreamWriter)
-            var listEvent = sqlHelper.getAllEvent()
             for (element in listEvent) {
-                if (element.eventContent.contains(",")||element.eventContent.contains("\n")){
+                if (element.eventContent.contains(",") || element.eventContent.contains("\n")) {
                     bw.write("${element.date},\"${element.eventContent}\"")
-                }else{
+                } else {
                     bw.write("${element.date},${element.eventContent}")
                 }
                 bw.newLine()
             }
             bw.close()
             Toast.makeText(this, "Lưu trữ thành công", Toast.LENGTH_SHORT).show()
-        }catch (ex: Exception){
+        } catch (ex: Exception) {
             Toast.makeText(this, "Lưu trữ thất bại $ex", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun getEventInfor(line: String): List<String> {
+        var result = ArrayList<String>()
+        var stack = Stack<Char>()
+        var str = StringBuilder()
+        for (i in line.indices) {
+            var ch = line[i]
+            if (ch == '\"') {
+                if (str.length > 0 && stack.size % 2 == 0) {
+                    str.append(ch)
+                }
+            } else if (ch == ',' && stack.size % 2 == 0){
+                result.add(str.toString())
+                stack.clear()
+                str = StringBuilder()
+            }else if (ch == ',' && stack.size % 2 != 0){
+                str.append(ch)
+            }else{
+                str.append(ch)
+            }
+        }
+        result.add(str.toString())
+        return result
+    }
+
+    fun getListLine():List<String>{
+        var listLine = ArrayList<String>()
+        try {
+            val file = File(filesDir, "backup.csv")
+            val fileInputStream = FileInputStream(file)
+            val inputStreamReader = InputStreamReader(fileInputStream, "UTF-8")
+            val bw = BufferedReader(inputStreamReader)
+
+                var line: String? = bw.readLine()
+                var strTemp = ""
+                while (line != null) {
+                    while (countQuotes(line.toString())%2==1){
+                        strTemp += "$line\n"
+                        line = bw.readLine()
+                    }
+                    if (strTemp!=""){
+                        strTemp = strTemp.substring(0,strTemp.length-1)
+                        listLine.add(strTemp)
+                        strTemp=""
+                    }else{
+                        listLine.add(line.toString())
+                    }
+                    line = bw.readLine()
+                }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        return listLine
+    }
+
+    fun countQuotes(line: String):Int{
+        var count = 0
+        for (i in line.indices){
+            var ch = line[i].toString()
+            if (ch=="\""){
+                count++
+            }
+        }
+        return count
     }
 
     private fun setupViewPager() {
