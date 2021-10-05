@@ -2,6 +2,7 @@ package com.example.dictionary.activities
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -25,7 +26,8 @@ import kotlin.collections.ArrayList
 private const val PAGE_CENTER = 1
 private val format: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-class MainActivity : AppCompatActivity() {
+
+class MainActivity : AppCompatActivity(), MonthFragment.SendRequest {
     lateinit var localDate: LocalDate
     lateinit var fragList: ArrayList<MonthFragment>
     lateinit var pageAdapter: ViewPagerAdapter
@@ -59,36 +61,36 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun restoreEvent() {
-        try {
-            var list = getListLine()
-            if (list.isEmpty()) {
-                Toast.makeText(this, "Chưa backup dữ liệu, không thể restore", Toast.LENGTH_SHORT)
-                    .show()
-                return
-            }
-            var listEvent = ArrayList<Day>()
-            for (element in list) {
-                var listResult = getEventInfor(element)
-                listEvent.add(
-                    Day(
-                        LocalDate.parse(listResult[0], format),
-                        false,
-                        false,
-                        listResult[1]
-                    )
-                )
-            }
-            sqlHelper.deleteAllEvent()
-            sqlHelper.addRestoreEvent(listEvent)
-            pageAdapter.setCalendar(localDate, valueFirstDayOfWeek)
-            Toast.makeText(this, "Restore thành công", Toast.LENGTH_SHORT).show()
-        } catch (ex: Exception) {
-            Toast.makeText(
-                this,
-                "Có lỗi xảy ra trong quá trình phục hồi dữ liệu",
-                Toast.LENGTH_SHORT
-            ).show()
+//        try {
+        var list = getListLine()
+        if (list.isEmpty()) {
+            Toast.makeText(this, "Chưa backup dữ liệu, không thể restore", Toast.LENGTH_SHORT)
+                .show()
+            return
         }
+        var listEvent = ArrayList<Day>()
+        for (element in list) {
+            var listResult = getEventInfor(element)
+            listEvent.add(
+                Day(
+                    LocalDate.parse(listResult[0], format),
+                    false,
+                    false,
+                    listResult[1]
+                )
+            )
+        }
+        sqlHelper.deleteAllEvent()
+        sqlHelper.addRestoreEvent(listEvent)
+        pageAdapter.setCalendar(localDate, valueFirstDayOfWeek)
+        Toast.makeText(this, "Restore thành công", Toast.LENGTH_SHORT).show()
+//        } catch (ex: Exception) {
+//            Toast.makeText(
+//                this,
+//                "Có lỗi xảy ra trong quá trình phục hồi dữ liệu $ex",
+//                Toast.LENGTH_SHORT
+//            ).show()
+//        }
     }
 
     private fun initView() {
@@ -113,14 +115,26 @@ class MainActivity : AppCompatActivity() {
             val fileOutputStream = FileOutputStream(file)
             val outputStreamWriter = OutputStreamWriter(fileOutputStream, "UTF-8")
             val bw = BufferedWriter(outputStreamWriter)
-            for (element in listEvent) {
-                if (element.eventContent.contains(",") || element.eventContent.contains("\n")) {
-                    bw.write("${element.date},\"${element.eventContent}\"")
+
+            listEvent.forEach {
+                bw.append(it.date.toString()) //  thêm ngày trước
+                bw.append(",")
+                if (it.eventContent.contains("\n") || it.eventContent.contains(',')) {            // Th chứa cả dấu xuống dòng và dấu,
+                    if (it.eventContent.contains('"')) {                                                //có cả dấu "
+                        bw.append("\"${it.eventContent.replace("\"", "\"\"")}\"")
+                    } else {
+                        bw.append("\"${it.eventContent}\"")
+                    }
                 } else {
-                    bw.write("${element.date},${element.eventContent}")
+                    if (it.eventContent.contains('"')) {
+                        bw.append("\"${it.eventContent.replace("\"", "\"\"")}\"")
+                    } else {
+                        bw.append(it.eventContent)
+                    }
                 }
-                bw.newLine()
+                bw.append("\n")
             }
+            bw.flush()
             bw.close()
             Toast.makeText(this, "Lưu trữ thành công", Toast.LENGTH_SHORT).show()
         } catch (ex: Exception) {
@@ -132,17 +146,18 @@ class MainActivity : AppCompatActivity() {
         var result = ArrayList<String>()
         var stack = Stack<Char>()
         var str = StringBuilder()
+//        2021-10-07,"hsidvheh,kênh"" \nkỉirjh"""" k,ejdb"" \njeoehgeie \nọeeheui",
         for (i in line.indices) {
             var ch = line[i]
-            if (ch === '\"') {
-                if (str.length > 0 && stack.size % 2 == 0)
+            if (ch == '\"') {
+                if (str.length > 0 && stack.size % 2 == 0 && stack.size > 0)
                     str.append(ch)
                 stack.push(ch)
-            } else if (ch === ',' && stack.size % 2 == 0) {
+            } else if (ch == ',' && stack.size % 2 == 0) {
                 result.add(str.toString())
                 stack.clear()
                 str = StringBuilder()
-            } else if (ch === ',' && stack.size % 2 != 0) {
+            } else if (ch == ',' && stack.size % 2 != 0) {
                 str.append(ch)
             } else {
                 str.append(ch)
@@ -163,21 +178,34 @@ class MainActivity : AppCompatActivity() {
             var line: String? = bw.readLine()
             var strTemp = ""
             while (line != null) {
-                while (countQuotes(line.toString()) % 2 == 1) {
-                    strTemp += "$line\n"
+                while (line!!.isEmpty() || countQuotes(line.toString()) % 2 == 1 ||
+                    ((countQuotes(line.toString()) % 2 == 0 && line.substring(line.length - 2) == "\"\"")) ||
+                    (countQuotes(line.toString()) % 2 == 0 && line!![line.length - 1] != '\"')
+                ) {
+                    if (line == null || (countQuotes(line.toString()) % 2 == 1 && line.substring(line.length - 2) != "\"\"" && strTemp != "")) {
+                        break
+                    }
+                    if (line!= null){
+                        strTemp += "$line\n"
+                    }
                     line = bw.readLine()
+                    if (line == null) break
                 }
                 if (strTemp != "") {
-                    strTemp = strTemp.substring(0, strTemp.length - 2)
+                    if (line!=null){
+                        strTemp += line
+                    }
                     listLine.add(strTemp)
-                    strTemp = ""
+                    line = bw.readLine()
                 } else {
                     listLine.add(line.toString())
                     line = bw.readLine()
                 }
+                strTemp = ""
+                if (line == null) break
             }
         } catch (e: IOException) {
-            e.printStackTrace()
+            Log.d("Listline", "getListLine: ${e}")
         }
         return listLine
     }
@@ -185,8 +213,8 @@ class MainActivity : AppCompatActivity() {
     fun countQuotes(line: String): Int {
         var count = 0
         for (i in line.indices) {
-            var ch = line[i].toString()
-            if (ch == "\"") {
+            var ch = line[i]
+            if (ch == '\"') {
                 count++
             }
         }
@@ -223,7 +251,6 @@ class MainActivity : AppCompatActivity() {
                     tv_month.text =
                         "Tháng ${localDate.plusMonths(1).month.value} - ${localDate.plusMonths(1).year}"
                 }
-
 
             }
 
@@ -282,7 +309,12 @@ class MainActivity : AppCompatActivity() {
     private fun reloadData() {
         AppPreferences.init(this)
         AppPreferences.firstDayOfWeek = 0
-        AppPreferences.checkedDay = LocalDate.now().dayOfMonth
-        AppPreferences.checkedMonth = LocalDate.now().monthValue
+        AppPreferences.checkedDay = LocalDate.now().toString()
     }
+
+    override fun updateUI(localDate: LocalDate) {
+        pageAdapter.setCalendar(localDate, valueFirstDayOfWeek)
+    }
+
+
 }

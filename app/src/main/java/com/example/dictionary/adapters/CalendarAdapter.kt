@@ -15,16 +15,19 @@ import com.example.dictionary.utils.AppPreferences
 
 class CalendarAdapter(var context: Context, var dayOfMonth: ArrayList<Day>) :
     RecyclerView.Adapter<CalendarAdapter.DayViewHolder>() {
+    var onDoubleClick: ((Day) -> Unit)? = null
     var onClick: ((Day) -> Unit)? = null
     var index = -1
-    var color: Int = Color.YELLOW
-
     init {
         AppPreferences.init(context)
     }
 
     fun setOnItemClick(callBack: (Day) -> Unit) {
         onClick = callBack
+    }
+
+    fun setOnItemDoubleClick(callBack: (Day) -> Unit) {
+        onDoubleClick = callBack
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DayViewHolder {
@@ -39,7 +42,7 @@ class CalendarAdapter(var context: Context, var dayOfMonth: ArrayList<Day>) :
 
         if (day.checked) {
             index = position
-            holder.bgrChecked.setBackgroundColor(color)
+            holder.bgrChecked.setBackgroundColor(Color.YELLOW)
         } else
             if (day.eventContent != "") {
                 holder.bgrChecked.setBackgroundColor(ContextCompat.getColor(context, R.color.grey))
@@ -55,22 +58,40 @@ class CalendarAdapter(var context: Context, var dayOfMonth: ArrayList<Day>) :
             holder.tvDay.setTextColor(ContextCompat.getColor(context, R.color.black))
         }
 
+        holder.itemView.setOnTouchListener(object:View.OnTouchListener{
+            var gestureListener = object : GestureDetector.SimpleOnGestureListener(){
+                override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
+                    if (index == -1) index = position
+                    dayOfMonth[index].checked = false
+                    notifyItemChanged(index)
+                    dayOfMonth[position].checked = true
+                    index = position
+                    AppPreferences.checkedDay = day.date.toString()
+                    notifyItemChanged(position)
+                    onClick?.invoke(day)
+                    return true
+                }
 
-        holder.itemView.setOnClickListener(object : DoubleClickListener() {
-            override fun onDoubleClick() {
-                onClick?.invoke(day)
+                override fun onDown(e: MotionEvent?): Boolean {
+                    return true
+                }
+
+                override fun onDoubleTap(e: MotionEvent): Boolean {
+                    if (index == -1) index = position
+                    dayOfMonth[index].checked = false
+                    notifyItemChanged(index)
+                    dayOfMonth[position].checked = true
+                    index = position
+                    AppPreferences.checkedDay = day.date.toString()
+                    notifyItemChanged(position)
+                    onDoubleClick?.invoke(day)
+                    return true
+                }
             }
-
-            override fun onSingleClick() {
-                if (index == -1) index = position
-                dayOfMonth[index].checked = false
-                notifyItemChanged(index)
-                dayOfMonth[position].checked = true
-                index = position
-                color = Color.YELLOW
-                AppPreferences.checkedDay = day.date.dayOfMonth
-                AppPreferences.checkedMonth = day.date.month.value
-                notifyItemChanged(position)
+            var gestureDetector = GestureDetector(context,gestureListener)
+            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+                gestureDetector.onTouchEvent(event)
+                return true
             }
 
         })

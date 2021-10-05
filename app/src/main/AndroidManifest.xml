@@ -12,13 +12,15 @@
         <activity android:name=".activities.ListDictionaryActivity"></activity>
         <activity android:name=".activities.WriteDictionaryActivity" />
         <activity android:name=".activities.ConfirmPassActivity">
+
+        </activity>
+        <activity android:name=".activities.MainActivity" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".activities.MainActivity" />
     </application>
 
 </manifest>

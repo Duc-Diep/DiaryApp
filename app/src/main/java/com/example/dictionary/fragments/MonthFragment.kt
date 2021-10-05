@@ -17,6 +17,7 @@ import com.example.dictionary.adapters.DictionaryAdapter
 import com.example.dictionary.helpers.SQLHelper
 import com.example.dictionary.objects.Day
 import com.example.dictionary.utils.AppPreferences
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_month.view.*
 import java.time.LocalDate
 import java.time.YearMonth
@@ -78,7 +79,6 @@ class MonthFragment : Fragment() {
         var previousMonthLength = YearMonth.from(localDate.minusMonths(1)).lengthOfMonth()
         var indexDay = 1
         var countNumberDayOfPreviousWeek = 0
-        var currentTime = LocalDate.now()
         for (i in 1..50) {
             if (i < dayOfWeek) {
                 if (monthValue==1){
@@ -107,7 +107,7 @@ class MonthFragment : Fragment() {
                 if (i == (lengthOfMonth + dayOfWeek)) {
                     indexDay = 1
                 } else {
-                    if (indexDay == AppPreferences.checkedDay && monthValue == AppPreferences.checkedMonth && isPageCenter) {
+                    if (LocalDate.of(year,monthValue,indexDay).toString()==AppPreferences.checkedDay) {
                         daysInMonth.add(Day(LocalDate.of(year,monthValue,indexDay), true, true,getEventByDay(LocalDate.of(year,monthValue,indexDay).toString())))
                     } else {
                         daysInMonth.add(Day(LocalDate.of(year,monthValue,indexDay), false, true,getEventByDay(LocalDate.of(year,monthValue,indexDay).toString())))
@@ -129,7 +129,7 @@ class MonthFragment : Fragment() {
         var count = value
         while (count > 0) {
             daysInMonth.removeAt(0)
-            daysInMonth.add(Day(LocalDate.of(year,monthValue+1,indexDay), false, false,""))
+            daysInMonth.add(Day(LocalDate.of(year,monthValue,indexDay), false, false,""))
             indexDay++
             count--
         }
@@ -147,6 +147,10 @@ class MonthFragment : Fragment() {
 
         dayAdapter = CalendarAdapter(requireContext(), daysInMonth)
         dayAdapter.setOnItemClick {
+            var request:SendRequest = context as SendRequest
+            request.updateUI(selectedDate)
+        }
+        dayAdapter.setOnItemDoubleClick {
             var intent = Intent(activity,WriteDictionaryActivity::class.java)
             intent.putExtra("date",it.date)
             intent.putExtra("event",it.eventContent)
@@ -173,6 +177,11 @@ class MonthFragment : Fragment() {
         getDaysInMonth(newMonth, valueFirstDayOfWeek)
         view?.rcv_days?.adapter = dayAdapter
     }
+
+    interface SendRequest {
+        fun updateUI(localDate: LocalDate)
+    }
+
 
     companion object {
         @JvmStatic
